@@ -38,3 +38,10 @@ body {
 		transform: rotate(360deg);
 	}
 }
+
+.techgrid {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	margin: 1em 0;
+}

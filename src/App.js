@@ -1,7 +1,31 @@
 import './App.css';
 import { useState, useEffect } from 'react';
-import { Typography, TextField, Grid, Paper, Button, Tabs, Tab, AppBar, Box, Fab, OutlinedInput, InputLabel, MenuItem, FormControl, Chip, Select } from '@material-ui/core';
-import { useTheme } from "@material-ui/core/styles";
+import {
+  Typography,
+  TextField,
+  Grid,
+  Paper,
+  Button,
+  Tabs,
+  Tab,
+  AppBar,
+  Box,
+  Fab,
+  OutlinedInput,
+  InputLabel,
+  MenuItem,
+  FormControl,
+  Chip,
+  Select,
+  Table,
+  TableBody,
+  TableCell,
+  TableRow,
+  TableHead,
+  TableContainer,
+  Checkbox
+} from '@material-ui/core';
+import { useTheme, withStyles } from "@material-ui/core/styles";
 import SaveIcon from '@material-ui/icons/Save';
 import LinkOutlinedIcon from '@material-ui/icons/LinkOutlined';
 import ReplayOutlinedIcon from '@material-ui/icons/ReplayOutlined';
@@ -35,6 +59,32 @@ const names = [
   "Material UI"
 ];
 
+const techImgs = (tech) => {
+  switch (tech) {
+    case "HTML5":
+      return HTML;
+    case "CSS3":
+      return CSS;
+    case "Java Script":
+      return JS;
+    case "React JS":
+      return REACT;
+    case "Node JS":
+      return NODE;
+    case "MongoDB":
+      return MONGODB;
+    case "Express JS":
+      return EXPRESS;
+    case "C/C++":
+      return CCPP;
+    case "Python":
+      return PYTHON;
+    case "Material UI":
+      return MATERIALUI;
+    default:
+      break;
+  }
+}
 function getStyles(name, personName, theme) {
   return {
     fontWeight:
@@ -43,6 +93,38 @@ function getStyles(name, personName, theme) {
         : theme.typography.fontWeightMedium
   };
 }
+
+const StyledTableCell = withStyles((theme) => ({
+  head: {
+    backgroundColor: theme.palette.primary,
+    color: theme.palette.common.black,
+  },
+  body: {
+    fontSize: 14,
+  },
+}))(TableCell);
+
+const StyledTableRow = withStyles((theme) => ({
+  root: {
+    '&:nth-of-type(odd)': {
+      backgroundColor: theme.palette.action.hover,
+    },
+  },
+}))(TableRow);
+
+const filterTop = (proj, topProj) => {
+  const topIds = topProj.map((p) => p._id)
+  // const filtered = proj.filter((p) => topIds.includes(p._id))
+  const withIsTop = proj.map((p) => {
+    return {
+      ...p,
+      isTop: topIds.includes(p._id)
+    }
+  })
+  console.log(withIsTop)
+  return withIsTop
+}
+
 const url = 'https://portofolio-helper-server.herokuapp.com/save';
 // const url = 'http://localhost:5000/save';
 function App() {
@@ -55,11 +137,17 @@ function App() {
   const [isUploading, setIsUploading] = useState(false);
   const [value, setValue] = useState(0);
   const [projects, setProjects] = useState([])
+  const [topProjects, setTopProjects] = useState([])
   const theme = useTheme();
 
   useEffect(() => {
+    getProjects()
+    getTopProjects()
+  }, [])
+
+  const getProjects = () => {
     fetch('https://portofolio-helper-server.herokuapp.com/getproject', {
-      method: 'get',
+      method: 'get'
     })
       .then((res) => res.json())
       .then((response) => {
@@ -74,16 +162,17 @@ function App() {
         }
         toast.error(message, { autoClose: 5000, draggable: true });
       })
-  }, [])
-
-  const getProjects = () => {
-    fetch('https://portofolio-helper-server.herokuapp.com/getproject', {
+  }
+  const getTopProjects = () => {
+    fetch('https://portofolio-helper-server.herokuapp.com/top', {
       method: 'get'
     })
       .then((res) => res.json())
       .then((response) => {
         console.log(response);
-        setProjects(response);
+        const res = response.map((itm) => (itm.project))
+        console.log(res);
+        setTopProjects(res);
       })
       .catch((err) => {
         console.log(err)
@@ -126,33 +215,6 @@ function App() {
     setValue(val);
   }
 
-  const techImgs = (tech) => {
-    switch (tech) {
-      case "HTML5":
-        return HTML;
-      case "CSS3":
-        return CSS;
-      case "Java Script":
-        return JS;
-      case "React JS":
-        return REACT;
-      case "Node JS":
-        return NODE;
-      case "MongoDB":
-        return MONGODB;
-      case "Express JS":
-        return EXPRESS;
-      case "C/C++":
-        return CCPP;
-      case "Python":
-        return PYTHON;
-      case "Material UI":
-        return MATERIALUI;
-      default:
-        break;
-    }
-  }
-
   const handleChange = (event) => {
     setTechnologies(event.target.value);
   };
@@ -162,6 +224,8 @@ function App() {
         <Tabs value={value} onChange={handleValue}>
           <Tab label="Add Project" />
           <Tab label="View All Project" />
+          <Tab label="View Top Project" />
+          <Tab label="View/Edit Top Project" />
         </Tabs>
       </AppBar>
       <TabPanel value={value} index={0}>
@@ -171,7 +235,6 @@ function App() {
               <img src={Loader} width="100px" alt="loader" />
             </div>
           }
-          {/* <Typography variant='h2' component='h2' gutterBottom >Add Projects</Typography> */}
           <Grid container spacing={3}>
             <Grid className="left" item lg={6} md={6} sm={6} xs={12}>
               <Paper style={{ padding: '2em' }}>
@@ -318,121 +381,167 @@ function App() {
         </div>
       </TabPanel>
       <TabPanel value={value} index={1}>
-        {
-          projects.map((proj, index) => {
-            if (index % 2 === 0) {
-              return (
-                <Paper key={proj._id} style={{ margin: '1em', padding: '2em' }} >
-                  <Grid container spacing={3}>
-                    <Grid style={{ textAlign: 'justify' }} item lg={6} md={6} sm={12} xs={12}>
-                      <Typography style={{ fontWeight: '600' }} variant="h4" gutterBottom>{proj.projectName}</Typography>
-                      <Typography variant="subtitle1" gutterBottom>{proj.projectDescription}</Typography>
-                      <Typography variant="h6" gutterBottom>Technologies Used:</Typography>
-                      <div className="techgrid">
-                        {
-                          proj.technologies.map((tech, index) => {
-                            return (
-                              <Box style={{ margin: '0 0.5em' }} gutterBottom key={index}>
-                                <img width="50px" src={techImgs(tech)} alt={tech} />
-                              </Box>
-                            )
-                          })
-                        }
-                      </div>
-                      <Button
-                        variant="contained"
-                        color="primary"
-                        endIcon={<LinkOutlinedIcon />}
-                        href={proj.projectLink}
-                        target="blank"
-                      >
-                        Live Project
-                      </Button>
-                      <Button
-                        style={{ marginLeft: '2em' }}
-                        variant="contained"
-                        color="secondary"
-                        endIcon={<LinkOutlinedIcon />}
-                        href={proj.githubLink}
-                        target="blank"
-                      >
-                        Github Link
-                      </Button>
-                    </Grid>
-                    <Grid item lg={6} md={6} sm={12} xs={12}>
-                      <Box>
-                        <img width="100%" src={proj.projectImage} alt="img" />
-                      </Box>
-                    </Grid>
-                  </Grid>
-                </Paper>
-              )
-            } else {
-              return (
-                <Paper key={proj._id} style={{ margin: '1em', padding: '2em' }} >
-                  <Grid container spacing={3}>
-                    <Grid item lg={6} md={6} sm={12} xs={12}>
-                      <Box>
-                        <img width="100%" src={proj.projectImage} alt="img" />
-                      </Box>
-                    </Grid>
-                    <Grid style={{ testAlign: 'justify' }} item lg={6} md={6} sm={12} xs={12}>
-                      <Typography style={{ fontWeight: '600' }} variant="h4" gutterBottom>{proj.projectName}</Typography>
-                      <Typography variant="subtitle1" gutterBottom>{proj.projectDescription}</Typography>
-                      <Typography variant="h6" gutterBottom>Technologies Used:</Typography>
-                      <div className="techgrid">
-                        {
-                          proj.technologies.map((tech, index) => {
-                            return (
-                              <Box style={{ margin: '0 0.5em' }} gutterBottom key={index}>
-                                <img width="50px" src={techImgs(tech)} alt={tech} />
-                              </Box>
-                            )
-                          })
-                        }
-                      </div>
-                      <Button
-                        variant="contained"
-                        color="primary"
-                        endIcon={<LinkOutlinedIcon />}
-                        href={proj.projectLink}
-                        target="blank"
-                      >
-                        Live Project
-                      </Button>
-                      <Button
-                        style={{ marginLeft: '2em' }}
-                        variant="contained"
-                        color="secondary"
-                        endIcon={<LinkOutlinedIcon />}
-                        href={proj.githubLink}
-                        target="blank"
-                      >
-                        Github Link
-                      </Button>
-                    </Grid>
-                  </Grid>
-                </Paper>
-              )
-            }
-          })
-        }
-        <Fab onClick={getProjects} style={{ position: 'fixed', bottom: '1em', right: '1em' }} color='primary'>
-          <ReplayOutlinedIcon />
-        </Fab>
+        <Projects getProjects={getProjects} projects={projects} />
+      </TabPanel>
+      <TabPanel value={value} index={2}>
+        <Projects getProjects={getTopProjects} projects={topProjects} />
+      </TabPanel>
+      <TabPanel value={value} index={3}>
+        <EditTopProjects projects={filterTop(projects, topProjects)} />
       </TabPanel>
     </>
   );
 }
 
 const TabPanel = (props) => {
-
   const { value, index, children } = props;
   return (
     <>
       {
         value === index && children
       }
+    </>
+  )
+}
+
+const Projects = ({ getProjects, projects }) => {
+  return (
+    <>
+      {
+        projects.map((proj, index) => {
+          if (index % 2 === 0) {
+            return (
+              <Paper key={proj._id} style={{ margin: '1em', padding: '2em' }} >
+                <Grid container spacing={3}>
+                  <Grid style={{ textAlign: 'justify' }} item lg={6} md={6} sm={12} xs={12}>
+                    <Typography style={{ fontWeight: '600' }} variant="h4" gutterBottom>{proj.projectName}</Typography>
+                    <Typography variant="subtitle1" gutterBottom>{proj.projectDescription}</Typography>
+                    <Typography variant="h6" gutterBottom>Technologies Used:</Typography>
+                    <div className="techgrid">
+                      {
+                        proj.technologies.map((tech, index) => {
+                          return (
+                            <Box style={{ margin: '0 0.5em' }} gutterBottom key={index}>
+                              <img width="50px" src={techImgs(tech)} alt={tech} />
+                            </Box>
+                          )
+                        })
+                      }
+                    </div>
+                    <Button
+                      variant="contained"
+                      color="primary"
+                      endIcon={<LinkOutlinedIcon />}
+                      href={proj.projectLink}
+                      target="blank"
+                    >
+                      Live Project
+                    </Button>
+                    <Button
+                      style={{ marginLeft: '2em' }}
+                      variant="contained"
+                      color="secondary"
+                      endIcon={<LinkOutlinedIcon />}
+                      href={proj.githubLink}
+                      target="blank"
+                    >
+                      Github Link
+                    </Button>
+                  </Grid>
+                  <Grid item lg={6} md={6} sm={12} xs={12}>
+                    <Box>
+                      <img width="100%" src={proj.projectImage} alt="img" />
+                    </Box>
+                  </Grid>
+                </Grid>
+              </Paper>
+            )
+          } else {
+            return (
+              <Paper key={proj._id} style={{ margin: '1em', padding: '2em' }} >
+                <Grid container spacing={3}>
+                  <Grid item lg={6} md={6} sm={12} xs={12}>
+                    <Box>
+                      <img width="100%" src={proj.projectImage} alt="img" />
+                    </Box>
+                  </Grid>
+                  <Grid style={{ testAlign: 'justify' }} item lg={6} md={6} sm={12} xs={12}>
+                    <Typography style={{ fontWeight: '600' }} variant="h4" gutterBottom>{proj.projectName}</Typography>
+                    <Typography variant="subtitle1" gutterBottom>{proj.projectDescription}</Typography>
+                    <Typography variant="h6" gutterBottom>Technologies Used:</Typography>
+                    <div className="techgrid">
+                      {
+                        proj.technologies.map((tech, index) => {
+                          return (
+                            <Box style={{ margin: '0 0.5em' }} gutterBottom key={index}>
+                              <img width="50px" src={techImgs(tech)} alt={tech} />
+                            </Box>
+                          )
+                        })
+                      }
+                    </div>
+                    <Button
+                      variant="contained"
+                      color="primary"
+                      endIcon={<LinkOutlinedIcon />}
+                      href={proj.projectLink}
+                      target="blank"
+                    >
+                      Live Project
+                    </Button>
+                    <Button
+                      style={{ marginLeft: '2em' }}
+                      variant="contained"
+                      color="secondary"
+                      endIcon={<LinkOutlinedIcon />}
+                      href={proj.githubLink}
+                      target="blank"
+                    >
+                      Github Link
+                    </Button>
+                  </Grid>
+                </Grid>
+              </Paper>
+            )
+          }
+        })
+      }
+      <Fab onClick={getProjects} style={{ position: 'fixed', bottom: '1em', right: '1em' }} color='primary'>
+        <ReplayOutlinedIcon />
+      </Fab>
+    </>
+  )
+}
+
+const EditTopProjects = ({ projects }) => {
+  return (
+    <>
+      <TableContainer style={{ margin: '3rem auto', maxWidth: '90%' }} component={Paper}>
+        <Table aria-label="customized table">
+          <TableHead>
+            <TableRow>
+              <StyledTableCell>Project Name</StyledTableCell>
+              <StyledTableCell align="right">isInTop</StyledTableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {projects.map((row) => (
+              <StyledTableRow key={row.projectName}>
+                <StyledTableCell component="th" scope="row">
+                  {row.projectName}
+                </StyledTableCell>
+                <StyledTableCell align="right">
+                  <Checkbox
+                    {...(row.isTop && { defaultChecked: true })}
+                    color="primary"
+                    inputProps={{ 'aria-label': 'secondary checkbox' }}
+                  />
+                </StyledTableCell>
+              </StyledTableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
     </>
   )
 }
